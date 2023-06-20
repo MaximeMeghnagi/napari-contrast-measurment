@@ -8,11 +8,15 @@ Created on Mon Jun 19 09:57:16 2023
 
 import napari
 from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QComboBox, QFormLayout, QLineEdit
+from magicgui.widgets import SpinBox, Label, Container, ComboBox, FloatSpinBox, LineEdit, RadioButtons, PushButton
+from magicgui import magic_factory
 from napari.layers import Image, Labels, Shapes
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 import h5py
+import pathlib
+import os
 
 
 
@@ -48,6 +52,17 @@ def peaks_value(av, peaks):
         peaks_val[i] = av[peaks[i]]
     return peaks_val
 
+# @magic_factory
+# def choose_image_layer(image: Image):
+#        pass #TODO: substitute with a qtwidget without magic functions
+
+#@magic_factory
+#def choose_layer(shape: Shapes):
+#        pass #TODO: substitute with a qtwidget without magic functions
+
+@magic_factory
+def choose_layer(path: pathlib.Path = os.getcwd()+'\\temp.h5'):
+        pass #TODO: substitute with a qtwidget without magic functions
 
 
 class ContrastWidget(QWidget):
@@ -81,8 +96,13 @@ class ContrastWidget(QWidget):
         layout.addRow(cam_noise_layout)
         self.cam_noise_box = cam_noise_box
         shapes_combo = QComboBox()
+        shapes_magiccombo = ComboBox()
         image_combo = QComboBox()
         layout.addRow('Select Area', shapes_combo)
+        self.choose_layer_widget = choose_layer()
+        self.choose_layer_widget.call_button.visible = False
+        self.add_magic_function(self.choose_layer_widget, layout)
+        #layout.addRow('Select Area', shapes_magiccombo)
         layout.addRow('Select Image', image_combo)
         text_input = QLineEdit()
         text_input_layout = QFormLayout()
@@ -93,6 +113,7 @@ class ContrastWidget(QWidget):
         import_button.clicked.connect(self.select_h5)
         layout.addWidget(import_button)
         self.shapes_combo = shapes_combo
+        self.shapes_magiccombo = shapes_magiccombo 
         self.image_combo = image_combo
         calculate_btn = QPushButton('Calculate contrast')
         calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.cam_noise_box.value(), self.pixel_width_box.value()))
@@ -100,7 +121,18 @@ class ContrastWidget(QWidget):
         update_btn = QPushButton('Update options')
         update_btn.clicked.connect(self.update_combobox_options)
         layout.addWidget(update_btn)
-        self.update_combobox_options()
+        # self.update_combobox_options()
+
+
+    #def add_magic_function(self, widget, _layout):
+    #    self.viewer.layers.events.inserted.connect(widget.reset_choices)
+    #    self.viewer.layers.events.removed.connect(widget.reset_choices)
+    #    _layout.addWidget(widget.native)
+
+    def add_magic_function(self, widget, _layout):
+        self.viewer.layers.events.changed.connect(widget.reset_choices)
+        #self.viewer.layers.events.removed.connect(widget.reset_choices)
+        _layout.addWidget(widget.native)
 
 
     def update_combobox_options(self):
@@ -115,6 +147,7 @@ class ContrastWidget(QWidget):
 
     def calculate_contrast(self, camera_noise, pixel_width) -> Labels:
         selected_shape = self.shapes_combo.currentText()
+        selected_shape = self.shapes_magiccombo.current_choice
         selected_image = self.image_combo.currentText()
         shape_layer = self.viewer.layers[selected_shape]
         image_layer = self.viewer.layers[selected_image]
