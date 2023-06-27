@@ -52,18 +52,26 @@ def peaks_value(av, peaks):
         peaks_val[i] = av[peaks[i]]
     return peaks_val
 
-# @magic_factory
-# def choose_image_layer(image: Image):
-#        pass #TODO: substitute with a qtwidget without magic functions
 
-#@magic_factory
-#def choose_layer(shape: Shapes):
-#        pass #TODO: substitute with a qtwidget without magic functions
+def find_index(t, a):
+    for i, element in enumerate(t):
+        if a in element:
+            return i
+    return -1
+
+
 
 @magic_factory
-def choose_layer(path: pathlib.Path = os.getcwd()+'\\temp.h5'):
-        pass #TODO: substitute with a qtwidget without magic functions
+def choose_image(Image: Image):
+       pass #TODO: substitute with a qtwidget without magic functions
 
+@magic_factory
+def choose_shape(Shape: Shapes):
+       pass #TODO: substitute with a qtwidget without magic functions
+
+@magic_factory
+def choose_h5(Import: pathlib.Path = os.getcwd()+'\\temp.h5'):
+        pass #TODO: substitute with a qtwidget without magic functions
 
 class ContrastWidget(QWidget):
 
@@ -72,7 +80,6 @@ class ContrastWidget(QWidget):
         self.viewer = viewer
         super().__init__()
         self.create_ui()
-        self.viewer.layers.events.changed.connect(self.update_combobox_options)
 
 
     def create_ui(self):
@@ -95,68 +102,45 @@ class ContrastWidget(QWidget):
         cam_noise_layout.addRow('Camera noise', cam_noise_box)
         layout.addRow(cam_noise_layout)
         self.cam_noise_box = cam_noise_box
-        shapes_combo = QComboBox()
+        images_magiccombo = ComboBox()
         shapes_magiccombo = ComboBox()
-        image_combo = QComboBox()
-        layout.addRow('Select Area', shapes_combo)
-        self.choose_layer_widget = choose_layer()
-        self.choose_layer_widget.call_button.visible = False
-        self.add_magic_function(self.choose_layer_widget, layout)
-        #layout.addRow('Select Area', shapes_magiccombo)
-        layout.addRow('Select Image', image_combo)
-        text_input = QLineEdit()
-        text_input_layout = QFormLayout()
-        text_input_layout.addRow('H5 file path', text_input)
-        layout.addRow(text_input_layout)
-        self.text_input = text_input
-        import_button = QPushButton("Import")
-        import_button.clicked.connect(self.select_h5)
-        layout.addWidget(import_button)
-        self.shapes_combo = shapes_combo
+        self.choose_image_widget = choose_image(call_button=False)
+        self.choose_shape_widget = choose_shape(call_button=False)
+        self.choose_h5_widget = choose_h5(call_button=False)
+        self.add_magic_function(self.choose_image_widget, layout)
+        self.add_magic_function(self.choose_shape_widget, layout)
+        self.add_magic_function_h5(self.choose_h5_widget, layout)
+        self.images_magiccombo = images_magiccombo 
         self.shapes_magiccombo = shapes_magiccombo 
-        self.image_combo = image_combo
         calculate_btn = QPushButton('Calculate contrast')
         calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.cam_noise_box.value(), self.pixel_width_box.value()))
         layout.addWidget(calculate_btn)
-        update_btn = QPushButton('Update options')
-        update_btn.clicked.connect(self.update_combobox_options)
-        layout.addWidget(update_btn)
-        # self.update_combobox_options()
 
-
-    #def add_magic_function(self, widget, _layout):
-    #    self.viewer.layers.events.inserted.connect(widget.reset_choices)
-    #    self.viewer.layers.events.removed.connect(widget.reset_choices)
-    #    _layout.addWidget(widget.native)
 
     def add_magic_function(self, widget, _layout):
+       self.viewer.layers.events.inserted.connect(widget.reset_choices)
+       self.viewer.layers.events.removed.connect(widget.reset_choices)
+       _layout.addWidget(widget.native)
+
+
+    def add_magic_function_h5(self, widget, _layout):
         self.viewer.layers.events.changed.connect(widget.reset_choices)
-        #self.viewer.layers.events.removed.connect(widget.reset_choices)
         _layout.addWidget(widget.native)
 
 
-    def update_combobox_options(self):
-        self.shapes_combo.clear()
-        self.image_combo.clear()
-        for layer in self.viewer.layers:
-            if isinstance(layer, Shapes):
-                self.shapes_combo.addItem(layer.name)
-            elif isinstance(layer, Image):
-                self.image_combo.addItem(layer.name)
-
-
     def calculate_contrast(self, camera_noise, pixel_width) -> Labels:
-        selected_shape = self.shapes_combo.currentText()
-        selected_shape = self.shapes_magiccombo.current_choice
-        selected_image = self.image_combo.currentText()
-        shape_layer = self.viewer.layers[selected_shape]
-        image_layer = self.viewer.layers[selected_image]
-        Image_data = np.array(image_layer.data[0])
-        mask = shape_layer.to_masks()[0]
+        selected_image = str(self.choose_image_widget.Image.value)
+        selected_shape = str(self.choose_shape_widget.Shape.value)
+        choices=str(self.viewer.layers).split(">, <")
+        image_layer = self.viewer.layers[find_index(choices,selected_image)]
+        shape_layer = self.viewer.layers[find_index(choices,selected_shape)]        
+        step = viewer.dims.current_step[0]
+        image_data = np.array(image_layer.data[step]) 
+        mask = shape_layer.to_masks()[0] # Make that with different lines
         usefull_mask = mask[5, :, :]
         y_pos, x_pos = area_real_size(usefull_mask)[0], area_real_size(usefull_mask)[1]
         y_size, x_size = usefull_mask.shape[0] - y_pos, usefull_mask.shape[1] - x_pos
-        new_image = part_of_image(Image_data, x_pos, y_pos, x_size, y_size, camera_noise)
+        new_image = part_of_image(image_data, x_pos, y_pos, x_size, y_size, camera_noise)
         av = average(new_image, y_size, x_size)
         peaks, _ = find_peaks(av, distance=8)
         valley, _ = find_peaks(-av, distance=8)
@@ -193,15 +177,7 @@ class ContrastWidget(QWidget):
         data = np.array(fig.canvas.renderer._renderer)
         self.viewer.add_image(data, name='Contrast', scale=(4, 4))
         return Labels
-    
-    
-    def select_h5(self):
-        file_path = self.text_input.text()
-        dataset_path = '/measurement/FLIRcamerameasurement/t0/c0/image'
-        with h5py.File(file_path, 'r') as f:
-                image_data = f[dataset_path][:]
-        viewer.add_image(image_data)
-        
+
 
 
 if __name__ == '__main__':
