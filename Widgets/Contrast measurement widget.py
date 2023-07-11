@@ -7,7 +7,7 @@ Created on Mon Jun 19 09:57:16 2023
 
 
 import napari
-from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QComboBox, QFormLayout
+from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox,  QFormLayout, QFileDialog
 from magicgui.widgets import ComboBox
 from magicgui import magic_factory
 from napari.layers import Image, Labels, Shapes
@@ -29,18 +29,76 @@ def area_real_size(mask_):
                 return (i, j)
 
 
-def part_of_image(im, x_pos, y_pos, x_size, y_size, cam_noise):
-    im_area = [[None] * y_size for _ in range(x_size)]
-    for i in range(x_size):
-        for j in range(y_size):
-            im_area[i][j] = im[y_pos + i][x_pos + j] - cam_noise
-    return im_area
+def lin_size(list,x_pos,y_pos):
+    nb_pix_x = 0
+    nb_pix_y = 0
+    c = True
+    c_right = True
+    c_left = True
+    c_down = True
+    c_up = True
+    while(c==True):
+        if(x_pos == 0):
+            c_left = False
+        if(x_pos == len(list[0])-1):
+            c_right = False
+        if(y_pos == 0):
+            c_up = False
+        if(y_pos == len(list)-1):
+            c_down = False
+        if((c_up==True) and ((int(y_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos)]==True)) and ((int(y_pos-2)<0) or ((list[int(y_pos-2)][int(x_pos)]==True) or ((int(x_pos+1)<list.shape[1]) and (list[int(y_pos-2)][int(x_pos+1)]==True)) or ((int(x_pos-1)>-1) and (list[int(y_pos-2)][int(x_pos-1)]==True)) or ((int(x_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos-1)]==True)) or ((int(x_pos+1)<list.shape[1]) and (list[int(y_pos-1)][int(x_pos+1)]==True))))):
+            y_pos -= 1 
+            nb_pix_y += 1
+            c_down = False
+        elif((c_up==True) and (c_left==True) and (int(y_pos-1)>-1) and (int(x_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos-1)]==True)):
+            y_pos -= 1
+            x_pos -=1 
+            nb_pix_y += 1
+            nb_pix_x += 1
+            c_down = False
+            c_right = False    
+        elif((c_up==True) and (c_right==True) and (int(y_pos-1)>-1) and (int(x_pos+1)<list.shape[1]) and (list[int(y_pos-1)][int(x_pos+1)]==True)):
+            y_pos -= 1
+            x_pos +=1 
+            nb_pix_y += 1
+            nb_pix_x += 1
+            c_down = False
+            c_left = False
+        elif((c_left==True) and ((int(x_pos-1)>-1) and (list[int(y_pos)][int(x_pos-1)]==True)) and ((int(x_pos-2)<0) or ((list[int(y_pos)][int(x_pos-2)]==True) or ((int(y_pos+1)<list.shape[0]) and (list[int(y_pos+1)][int(x_pos-2)]==True)) or ((int(y_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos-2)]==True)) or ((int(y_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos-1)]==True))  or ((int(y_pos+1)<list.shape[0]) and (list[int(y_pos+1)][int(x_pos-1)]==True))))):
+            x_pos -=1 
+            nb_pix_x += 1
+            c_right = False
+        elif((c_right==True) and (int(x_pos+1)<list.shape[1]) and (list[int(y_pos)][int(x_pos+1)]==True)  and ((int(x_pos+2)>=list.shape[1]) or ((list[int(y_pos)][int(x_pos+2)]==True) or ((int(y_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos+2)==True])) or ((int(y_pos+1)<list.shape[0]) and (list[int(y_pos+1)][int(x_pos+2)] == True)) or ((int(y_pos-1)>-1) and (list[int(y_pos-1)][int(x_pos+1)] == True)) or ((int(y_pos+1)<list.shape[0]) and (list[int(y_pos+1)][int(x_pos+1)] == True))))):
+            x_pos += 1 
+            nb_pix_x += 1
+            c_left = False
+        elif((c_down == True) and (int(y_pos+1)<list.shape[0]) and (list[int(y_pos+1)][int(x_pos)] == True) and ((int(y_pos+2)>=list.shape[0]) or ((list[int(y_pos+2)][int(x_pos)] == True) or ((int(x_pos+1)<list.shape[1]) and (list[int(y_pos+2)][int(x_pos+1)] == True)) or ((int(x_pos+1)>-1) and (list[int(y_pos+2)][int(x_pos-1)] == True)) or ((int(x_pos+1)<list.shape[1]) and (list[int(y_pos+1)][int(x_pos+1)] == True)) or ((int(x_pos+1)>-1) and (list[int(y_pos+1)][int(x_pos-1)] == True))))):
+            y_pos += 1 
+            nb_pix_y += 1
+            c_up = False
+        elif((c_down == True) and (c_left ==  True) and (int(y_pos+1)<list.shape[0]) and (int(x_pos-1)>-1) and (list[int(y_pos+1)][int(x_pos-1)] == True)):
+            y_pos += 1
+            x_pos -=1 
+            nb_pix_y += 1
+            nb_pix_x += 1
+            c_up = False
+            c_right = False    
+        elif((c_down == True) and (c_right ==  True) and (int(y_pos+1)<list.shape[0]) and (int(x_pos+1)<list.shape[1]) and (list[int(y_pos+1)][int(x_pos+1)] == True)):
+            y_pos += 1
+            x_pos +=1 
+            nb_pix_y += 1
+            nb_pix_x += 1
+            c_up = False
+            c_left = False 
+        else:
+            c = False
+    return (nb_pix_x+1,nb_pix_y+1)
 
 
 def peaks_value(y_val, peaks_pos):
     peaks_val = np.zeros(len(peaks_pos))
-    for i in range(len(peaks_pos)):
-        peaks_val[i] = y_val[peaks_pos[i]]
+    for i in range(len(peaks_pos)): 
+        peaks_val[i] = y_val[int(peaks_pos[i])]
     return peaks_val
 
 
@@ -49,17 +107,6 @@ def find_index(t, a):
         if a in element:
             return i
     return -1
-
-
-def det2_pix_arr(mask,i,j):
-    if (i==0 or i==(len(mask[0]-1)) or j==0 or j==(len(mask[:,0]-1))):
-        return True
-    else:
-        sum=mask[j-1,i-1]+mask[j-1,i]+mask[j-1,i+1]+mask[j,i-1]+mask[j,i+1]+mask[j+1,i-1]+mask[j+1,i]+mask[j+1,i+1]
-        if (sum<2):
-            return False
-        else:
-            return True
 
 
 
@@ -102,15 +149,6 @@ class ContrastWidget(QWidget):
         pixel_height_layout.addRow('Pixel height (µm)', pixel_height_box)
         layout.addRow(pixel_height_layout)
         self.pixel_height_box = pixel_height_box
-        cam_noise_box = QDoubleSpinBox()
-        cam_noise_box.setMaximum(999999)
-        cam_noise_box.setDecimals(0)
-        cam_noise_box.setValue(640)
-        cam_noise_box.setSingleStep(1)
-        cam_noise_layout = QFormLayout()
-        cam_noise_layout.addRow('Camera noise', cam_noise_box)
-        layout.addRow(cam_noise_layout)
-        self.cam_noise_box = cam_noise_box
         images_magiccombo = ComboBox()
         shapes_magiccombo = ComboBox()
         self.choose_image_widget = choose_image(call_button=False)
@@ -120,7 +158,7 @@ class ContrastWidget(QWidget):
         self.images_magiccombo = images_magiccombo 
         self.shapes_magiccombo = shapes_magiccombo 
         calculate_btn = QPushButton('Calculate contrast')
-        calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.cam_noise_box.value(), self.pixel_width_box.value(),self.pixel_height_box.value()))
+        calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.pixel_width_box.value(),self.pixel_height_box.value()))
         layout.addWidget(calculate_btn)
 
 
@@ -130,14 +168,14 @@ class ContrastWidget(QWidget):
        _layout.addWidget(widget.native)
 
 
-    def calculate_contrast(self, camera_noise, pixel_width, pixel_height) -> Labels:
+    def calculate_contrast(self, pixel_width, pixel_height) -> Labels:
         self.image_set()
-        self.data_analysis(camera_noise, pixel_width, pixel_height)
+        self.data_analysis(pixel_width, pixel_height)
         self.graph_view()
 
 
     def image_set(self):
-        global image_data, nb_of_line, shape_layer, step        
+        global image_data, nb_of_line, shape_layer, camera_noise, step        
         selected_image = str(self.choose_image_widget.Image.value)
         selected_shape = str(self.choose_shape_widget.Shape.value)
         choices=str(self.viewer.layers).split(">, <")
@@ -146,55 +184,59 @@ class ContrastWidget(QWidget):
         step = viewer.dims.current_step[0]
         image_data = np.array(image_layer.data[step])
         nb_of_line = len(shape_layer.to_masks())
+        camera_noise = np.min(image_data)
 
 
-    def data_analysis(self, camera_noise, pixel_width, pixel_height):
+    def data_analysis(self, pixel_width, pixel_height):
         global values_x, values_y, peaks, valley, peaks_val, valley_val, Imin, Imax, Contrast, x_axis_peak, x_axis_valley
         x_pos = np.zeros(nb_of_line)
         y_pos = np.zeros(nb_of_line)
         x_size = np.zeros(nb_of_line)
         y_size = np.zeros(nb_of_line)
+        size = np.zeros(nb_of_line)
         sim_x = np.empty((nb_of_line,), dtype=object)
         sim_y = np.empty((nb_of_line,), dtype=object)
-        size = np.zeros(nb_of_line)
-        values_x = np.empty((nb_of_line,), dtype=object)
-        values_y = np.empty((nb_of_line,), dtype=object)
-        peaks = np.empty((nb_of_line,), dtype=object)
-        valley = np.empty((nb_of_line,), dtype=object)
-        peaks_val = np.empty((nb_of_line,), dtype=object)
-        valley_val = np.empty((nb_of_line,), dtype=object)
+        values_x = [[] for _ in range(nb_of_line)]
+        values_y = [[] for _ in range(nb_of_line)]
+        peaks = [[] for _ in range(nb_of_line)]
+        valley = [[] for _ in range(nb_of_line)]
+        peaks_val = [[] for _ in range(nb_of_line)]
+        valley_val = [[] for _ in range(nb_of_line)]
+        x_axis_peak = [[] for _ in range(nb_of_line)]
+        x_axis_valley = [[] for _ in range(nb_of_line)]
         Imax = np.zeros(nb_of_line)
         Imin = np.zeros(nb_of_line)
         Contrast = np.zeros(nb_of_line)
-        x_axis_peak = np.empty((nb_of_line,), dtype=object)
-        x_axis_valley = np.empty((nb_of_line,), dtype=object)
         for i in range (nb_of_line):
-            mask = shape_layer.to_masks()[i]
-            mask = mask[step,:,:]
+            mask = shape_layer.to_masks()[i][step]
             y_pos[i], x_pos[i] = area_real_size(mask)[0], area_real_size(mask)[1]
-            y_size[i], x_size[i] = mask.shape[0] - y_pos[i], mask.shape[1] - x_pos[i]
-            sim_x[i] = np.arange(int(x_pos[i]), int(x_pos[i] + x_size[i]) + 1, 1)
-            sim_y[i] = np.round(np.linspace(y_pos[i],y_pos[i]+y_size[i]+1,int(x_size[i]+1))).astype(int)
+            x_size[i], y_size[i] = lin_size(mask,x_pos[i],y_pos[i])
+            if (x_size[i]<y_size[i]):
+                sim_y[i] = np.arange(int(y_pos[i]), int(y_pos[i] + y_size[i]) + 1, 1) 
+                sim_x[i] = np.round(np.linspace(x_pos[i],x_pos[i]+x_size[i]+1,int(y_size[i]+1))).astype(int)
+            else :
+                sim_x[i] = np.arange(int(x_pos[i]), int(x_pos[i] + x_size[i]) + 1, 1)
+                sim_y[i] = np.round(np.linspace(y_pos[i],y_pos[i]+y_size[i]+1,int(x_size[i]+1))).astype(int)
             size[i] = np.size(sim_x[i])
             for j in range (int(size[i])):
-                values_x[i] = np.append(values_x[i], math.sqrt((pixel_width*j)**2 + (pixel_height*j)**2))
-                values_y[i] = np.append(values_y[i], image_data[sim_y[i][j],sim_x[i][j]] - camera_noise) 
-            values_x[i] = values_x[i][1:]
-            values_y[i] = values_y[i][1:]
-            peaks[i] = np.append(peaks[i], find_peaks(values_y[i], distance=8))
-            valley[i] = np.append(valley[i], find_peaks(-values_y[i], distance=8))
-            peaks_val[i] = np.append(peaks_val[i], peaks_value(values_y[i],peaks[i][1]))
-            valley_val[i] = np.append(valley_val[i], peaks_value(values_y[i],valley[i][1]))
-            peaks_val[i] = peaks_val[i][1:]
-            valley_val[i] = valley_val[i][1:]
+                values_x[i].append(math.sqrt((pixel_width*j)**2 + (pixel_height*j)**2))
+                values_y[i].append(image_data[sim_y[i][j],sim_x[i][j]] - camera_noise)
+            peaks[i] = find_peaks(values_y[i], distance=8)
+            for j in range (len(values_y[i])):
+                values_y[i][j] = (-int(values_y[i][j]))
+            valley[i] = find_peaks(values_y[i], distance=8)
+            for j in range (len(values_y[i])):
+                values_y[i][j] = (-int(values_y[i][j]))
+            peaks_val[i] = peaks_value(values_y[i], peaks[i][0])
+            valley_val[i] = peaks_value(values_y[i], valley[i][0])
             Imax[i] = np.mean(peaks_val[i])
             Imin[i] = np.mean(valley_val[i])
             Contrast[i] = (Imax[i] - Imin[i]) / (Imax[i] + Imin[i])
             for j in range(len(peaks_val[i])):
-                x_axis_peak[i] = np.append(x_axis_peak[i], math.sqrt((pixel_width*peaks[i][1][j])**2 + (pixel_height*peaks[i][1][j])**2))
+                x_axis_peak[i].append(math.sqrt((pixel_width*peaks[i][0][j])**2 + (pixel_height*peaks[i][0][j])**2))
             x_axis_peak[i] = x_axis_peak[i][1:]
             for j in range(len(valley_val[i])): 
-                x_axis_valley[i] = np.append(x_axis_valley[i], math.sqrt((pixel_width*valley[i][1][j])**2 + (pixel_height*valley[i][1][j])**2))
+                x_axis_valley[i].append(math.sqrt((pixel_width*valley[i][0][j])**2 + (pixel_height*valley[i][0][j])**2))
             x_axis_valley[i] = x_axis_valley[i][1:]
 
 
@@ -202,10 +244,6 @@ class ContrastWidget(QWidget):
         plt.figure()
         for i in range (nb_of_line):
             plt.plot(values_x[i], values_y[i], color=color[i],label="C={}".format(round(Contrast[i], 2)))
-            plt.plot(x_axis_peak[i], peaks_val[i], marker='o', markersize=4, linewidth=0, linestyle='solid', color=color[i])
-            plt.plot(x_axis_valley[i], valley_val[i], marker='o', markersize=4, linewidth=0, linestyle='solid', color=color[i])
-            plt.plot(values_x[i], Imax[i] * np.ones_like(values_x[i]), linewidth=1.5, linestyle='dotted', color=color[i])
-            plt.plot(values_x[i], Imin[i] * np.ones_like(values_x[i]), linewidth=1.5, linestyle='dotted', color=color[i])
         plt.title("Contrast", size=14, fontweight='bold')
         plt.xlabel("Position [µm]", size=14)
         plt.ylabel("Intensity [a.u.]", size=14)
@@ -214,10 +252,7 @@ class ContrastWidget(QWidget):
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
         plt.legend()
-        fig = plt.gcf()
-        fig.canvas.draw()
-        data = np.array(fig.canvas.renderer._renderer)
-        self.viewer.add_image(data, name='Contrast', scale=(4, 4))
+        plt.show()
 
 
 

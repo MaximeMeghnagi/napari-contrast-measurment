@@ -5,47 +5,34 @@ Created on Mon Jun 19 09:57:16 2023
 @author: Maxime Meghnagi
 """
 
-
 import napari
-from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QComboBox, QFormLayout, QLineEdit
-from magicgui.widgets import SpinBox, Label, Container, ComboBox, FloatSpinBox, LineEdit, RadioButtons, PushButton
-from magicgui import magic_factory
-from napari.layers import Image, Labels, Shapes
+from qtpy.QtWidgets import QWidget, QFormLayout, QPushButton, QFileDialog
 import h5py
-import pathlib
 
-
-
-
-
-
-@magic_factory
-def choose_h5(Import: pathlib.Path = ''):
-        pass #TODO: substitute with a qtwidget without magic functions
 
 
 class H5Widget(QWidget):
-
-    
     def __init__(self, viewer: napari.Viewer):
         self.viewer = viewer
         super().__init__()
         self.create_ui()
 
-
     def create_ui(self):
         layout = QFormLayout()
         self.setLayout(layout)
-        self.choose_h5_widget = choose_h5(call_button=False)
-        self.add_magic_function_h5(self.choose_h5_widget, layout)
+        self.select_button = QPushButton('Select file')
+        self.select_button.clicked.connect(self.handle_file_selection)
+        layout.addRow(self.select_button)
 
-
-
-    def add_magic_function_h5(self, widget, _layout):
-        self.viewer.layers.events.changed.connect(widget.reset_choices)
-        _layout.addWidget(widget.native)
-
-
+    def handle_file_selection(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(self)
+        if file_path:
+            print(file_path)
+            dataset_path = '/measurement/FLIRcamerameasurement/t0/c0/image'
+            with h5py.File(file_path, 'r') as f:
+                image_data = f[dataset_path][:]
+            self.viewer.add_image(image_data)
 
 
 if __name__ == '__main__':
@@ -54,4 +41,3 @@ if __name__ == '__main__':
     mywidget.setMinimumSize(225, 200)
     viewer.window.add_dock_widget(mywidget, name='H5 import')
     napari.run()
-
