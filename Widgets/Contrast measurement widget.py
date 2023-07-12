@@ -25,8 +25,26 @@ color = ['blue','red','green','cyan','magenta','yellow','black']
 def area_real_size(mask_):
     for i in range(mask_.shape[0]):
         for j in range(mask_.shape[1]):
-            if mask_[i][j] == True:
-                return (i, j)
+            if (mask_[i][j] == True):
+                sum_ = 0
+                if (((i-1)>0) and ((j-1)>0) and (mask_[i-1][j-1]==True)):
+                    sum_ += 1
+                if (((i-1)>0) and (mask_[i-1][j]==True)):
+                    sum_ += 1
+                if (((i-1)>0) and ((j+1)<mask_.shape[1]) and (mask_[i-1][j+1]==True)):
+                    sum_ += 1
+                if (((j-1)>0) and (mask_[i][j-1]==True)):
+                    sum_ += 1
+                if (((j+1)<mask_.shape[1]) and (mask_[i][j+1]==True)):
+                    sum_ += 1
+                if (((i+1)<mask_.shape[0]) and ((j-1)>0) and (mask_[i+1][j-1]==True)):
+                    sum_ += 1
+                if (((i+1)<mask_.shape[0]) and (mask_[i+1][j]==True)):
+                    sum_ += 1
+                if (((i+1)<mask_.shape[0]) and ((j+1)<mask_.shape[1]) and (mask_[i+1][j+1]==True)):
+                    sum_ += 1
+                if (sum_<2):
+                    return (i, j)
 
 
 def lin_size(list,x_pos,y_pos):
@@ -37,7 +55,7 @@ def lin_size(list,x_pos,y_pos):
     c_left = True
     c_down = True
     c_up = True
-    while(c==True):
+    while(c == True):
         if(x_pos == 0):
             c_left = False
         if(x_pos == len(list[0])-1):
@@ -209,7 +227,7 @@ class ContrastWidget(QWidget):
         Contrast = np.zeros(nb_of_line)
         for i in range (nb_of_line):
             mask = shape_layer.to_masks()[i][step]
-            y_pos[i], x_pos[i] = area_real_size(mask)[0], area_real_size(mask)[1]
+            (y_pos[i], x_pos[i]) = area_real_size(mask)
             x_size[i], y_size[i] = lin_size(mask,x_pos[i],y_pos[i])
             if (x_size[i]<y_size[i]):
                 sim_y[i] = np.arange(int(y_pos[i]), int(y_pos[i] + y_size[i]) + 1, 1) 
@@ -261,4 +279,4 @@ if __name__ == '__main__':
     mywidget = ContrastWidget(viewer)
     mywidget.setMinimumSize(225, 200)
     viewer.window.add_dock_widget(mywidget, name='Contrast')
-    napari.run()
+    napari.run() 
