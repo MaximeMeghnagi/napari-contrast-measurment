@@ -259,6 +259,20 @@ class ContrastWidget(QWidget):
 
 
     def graph_view(self):
+        if (nb_of_line==1):
+            shape_layer.edge_color = [0., 0., 1., 1.] # Blue
+        elif (nb_of_line==2):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.]] # Red
+        elif (nb_of_line==3):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.],[0., 1., 0., 1.]] # Green
+        elif (nb_of_line==4):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.],[0., 1., 0., 1.],[0., 1., 1., 1.]] # Cyan
+        elif (nb_of_line==5):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.],[0., 1., 0., 1.],[0., 1., 1., 1.],[1., 0., 1., 1.]] # Magenta
+        elif (nb_of_line==6):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.],[0., 1., 0., 1.],[0., 1., 1., 1.],[1., 0., 1., 1.],[1., 1., 0., 1.]] # Yellow
+        elif (nb_of_line==7):
+            shape_layer.edge_color = [[0., 0., 1., 1.],[1., 0., 0., 1.],[0., 1., 0., 1.],[0., 1., 1., 1.],[1., 0., 1., 1.],[1., 1., 0., 1.],[0., 0., 0., 1.]] # Black
         plt.figure()
         for i in range (nb_of_line):
             plt.plot(values_x[i], values_y[i], color=color[i],label="C={}".format(round(Contrast[i], 2)))
