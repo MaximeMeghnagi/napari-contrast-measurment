@@ -198,6 +198,7 @@ class ContrastWidget(QWidget):
         calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.pixel_width_box.value(),self.pixel_height_box.value()))
         layout.addWidget(calculate_btn)
 
+
     def add_magic_function(self, widget, _layout):
        self.viewer.layers.events.inserted.connect(widget.reset_choices)
        self.viewer.layers.events.removed.connect(widget.reset_choices)
