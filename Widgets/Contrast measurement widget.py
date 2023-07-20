@@ -7,7 +7,7 @@ Created on Mon Jun 19 09:57:16 2023
 
 
 import napari
-from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox,  QFormLayout, QFileDialog
+from qtpy.QtWidgets import QWidget, QPushButton, QDoubleSpinBox,  QFormLayout, QLabel
 from magicgui.widgets import ComboBox
 from magicgui import magic_factory
 from napari.layers import Image, Labels, Shapes
@@ -21,6 +21,16 @@ import math
 color = ['blue','red','green','cyan','magenta','yellow','black']
 
 
+
+def cam_noise_av(mask_, image_data):
+    s = 0
+    c = 0
+    for i in range(mask_.shape[0]):
+        for j in range(mask_.shape[1]):
+            if (mask_[i][j] == True):
+                s += image_data[i][j]
+                c += 1
+    return (s/c)
 
 def area_real_size(mask_):
     for i in range(mask_.shape[0]):
@@ -138,6 +148,10 @@ def choose_shape(Shape: Shapes):
        pass #TODO: substitute with a qtwidget without magic functions
 
 
+@magic_factory
+def area_cam_noise(Shape: Shapes):
+       pass #TODO: substitute with a qtwidget without magic functions
+
 
 class ContrastWidget(QWidget):
 
@@ -166,19 +180,23 @@ class ContrastWidget(QWidget):
         pixel_height_layout = QFormLayout()
         pixel_height_layout.addRow('Pixel height (µm)', pixel_height_box)
         layout.addRow(pixel_height_layout)
+        self.camera_noise_label = QLabel()
+        layout.addRow('Camera Noise :  ', self.camera_noise_label)
         self.pixel_height_box = pixel_height_box
         images_magiccombo = ComboBox()
         shapes_magiccombo = ComboBox()
         self.choose_image_widget = choose_image(call_button=False)
         self.choose_shape_widget = choose_shape(call_button=False)
+        self.area_cam_noise_widget = area_cam_noise(call_button=False)
         self.add_magic_function(self.choose_image_widget, layout)
         self.add_magic_function(self.choose_shape_widget, layout)
+        self.add_magic_function(self.area_cam_noise_widget, layout)
         self.images_magiccombo = images_magiccombo 
         self.shapes_magiccombo = shapes_magiccombo 
+        self.area_cam_noise_magiccombo = shapes_magiccombo 
         calculate_btn = QPushButton('Calculate contrast')
         calculate_btn.clicked.connect(lambda: self.calculate_contrast(self.pixel_width_box.value(),self.pixel_height_box.value()))
         layout.addWidget(calculate_btn)
-
 
     def add_magic_function(self, widget, _layout):
        self.viewer.layers.events.inserted.connect(widget.reset_choices)
@@ -190,20 +208,25 @@ class ContrastWidget(QWidget):
         self.image_set()
         self.data_analysis(pixel_width, pixel_height)
         self.graph_view()
+        self.camera_noise_label.setText('%.2f' % round(camera_noise, 2))
 
 
     def image_set(self):
         global image_data, nb_of_line, shape_layer, camera_noise, step        
         selected_image = str(self.choose_image_widget.Image.value)
         selected_shape = str(self.choose_shape_widget.Shape.value)
+        area_cam_noise_shape = str(self.area_cam_noise_widget.Shape.value)
         choices=str(self.viewer.layers).split(">, <")
         image_layer = self.viewer.layers[find_index(choices,selected_image)]
-        shape_layer = self.viewer.layers[find_index(choices,selected_shape)]        
+        shape_layer = self.viewer.layers[find_index(choices,selected_shape)]
+        cam_noise_layer = self.viewer.layers[find_index(choices,area_cam_noise_shape)]   
         step = viewer.dims.current_step[0]
         image_data = np.array(image_layer.data[step])
+        cam_noise_data = cam_noise_layer.to_masks()[:,step][0]
+        camera_noise = cam_noise_av(cam_noise_data, image_data)
         nb_of_line = len(shape_layer.to_masks())
-        camera_noise = np.min(image_data)
-
+        camera_noise = cam_noise_av(cam_noise_data, image_data)
+        print(round(camera_noise,2))
 
     def data_analysis(self, pixel_width, pixel_height):
         global values_x, values_y, peaks, valley, peaks_val, valley_val, Imin, Imax, Contrast, x_axis_peak, x_axis_valley
