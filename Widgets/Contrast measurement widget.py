@@ -227,7 +227,6 @@ class ContrastWidget(QWidget):
         camera_noise = cam_noise_av(cam_noise_data, image_data)
         nb_of_line = len(shape_layer.to_masks())
         camera_noise = cam_noise_av(cam_noise_data, image_data)
-        print(round(camera_noise,2))
 
     def data_analysis(self, pixel_width, pixel_height):
         global values_x, values_y, peaks, valley, peaks_val, valley_val, Imin, Imax, Contrast, x_axis_peak, x_axis_valley
