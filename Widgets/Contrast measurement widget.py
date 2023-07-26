@@ -15,6 +15,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 import math
+from openpyxl import Workbook
+import os
+from datetime import datetime
 
 
 
@@ -149,7 +152,7 @@ def choose_shape(Shape: Shapes):
 
 
 @magic_factory
-def area_cam_noise(Shape: Shapes):
+def area_cam_noise(Noise: Shapes):
        pass #TODO: substitute with a qtwidget without magic functions
 
 
@@ -216,7 +219,7 @@ class ContrastWidget(QWidget):
         global image_data, nb_of_line, shape_layer, camera_noise, step        
         selected_image = str(self.choose_image_widget.Image.value)
         selected_shape = str(self.choose_shape_widget.Shape.value)
-        area_cam_noise_shape = str(self.area_cam_noise_widget.Shape.value)
+        area_cam_noise_shape = str(self.area_cam_noise_widget.Noise.value)
         choices=str(self.viewer.layers).split(">, <")
         image_layer = self.viewer.layers[find_index(choices,selected_image)]
         shape_layer = self.viewer.layers[find_index(choices,selected_shape)]
@@ -308,6 +311,37 @@ class ContrastWidget(QWidget):
         plt.yticks(fontsize=12)
         plt.legend()
         plt.show()
+        wb = Workbook()
+        sheet = wb.active
+        sheet.title = "Contrast measure"
+        col = 65 
+        line = 1
+        for i in range(nb_of_line):
+            line = 1
+            for j in range (len(values_x[i])+1):
+                if (j == 0):
+                    sheet[chr(col)+str(line)] = 'Position [µm]'
+                    sheet[chr(col+1)+str(line)] = 'Intensity [a.u.]'
+                else :
+                    sheet[chr(col)+str(line)] = values_x[i][j-1]
+                    sheet[chr(col+1)+str(line)] = values_y[i][j-1]
+                line += 1   
+            col += 2
+        line = 1                     
+        col+=2
+        for i in range (nb_of_line):
+            for j in range (len(Contrast)):
+                    sheet[chr(col)+str(line+j)] = 'Contrast'+str(j+1)
+                    sheet[chr(col+1)+str(line+j)] = Contrast[j]
+        col+=3
+        sheet[chr(col)+str(line)] = 'Camera noise'
+        sheet[chr(col)+str(line+1)] = camera_noise
+        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = f"Measure_{now}.xlsx"
+        folder = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(folder, file_name)
+        wb.save(path)
+
 
 
 
