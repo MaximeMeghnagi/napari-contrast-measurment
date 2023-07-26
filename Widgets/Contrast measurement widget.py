@@ -18,6 +18,7 @@ import math
 from openpyxl import Workbook
 import os
 from datetime import datetime
+from openpyxl.styles import Font, Alignment
 
 
 
@@ -320,21 +321,29 @@ class ContrastWidget(QWidget):
             line = 1
             for j in range (len(values_x[i])+1):
                 if (j == 0):
-                    sheet[chr(col)+str(line)] = 'Position [µm]'
-                    sheet[chr(col+1)+str(line)] = 'Intensity [a.u.]'
+                    sheet[chr(col)+str(line)] = 'Position '+str(i+1)+' [µm]'
+                    sheet[chr(col)+str(line)].font = Font(bold=True)
+                    sheet[chr(col)+str(line)].alignment = Alignment(horizontal='center', vertical='center')
+                    sheet[chr(col+1)+str(line)] = 'Intensity' +str(i+1)+' [a.u.]'
+                    sheet[chr(col+1)+str(line)].font = Font(bold=True)
+                    sheet[chr(col+1)+str(line)].alignment = Alignment(horizontal='center', vertical='center')
                 else :
                     sheet[chr(col)+str(line)] = values_x[i][j-1]
                     sheet[chr(col+1)+str(line)] = values_y[i][j-1]
                 line += 1   
             col += 2
         line = 1                     
-        col+=2
+        col += 1
         for i in range (nb_of_line):
-            for j in range (len(Contrast)):
-                    sheet[chr(col)+str(line+j)] = 'Contrast'+str(j+1)
-                    sheet[chr(col+1)+str(line+j)] = Contrast[j]
-        col+=3
+                    sheet[chr(col)+str(line)] = 'Contrast '+str(i+1)
+                    sheet[chr(col)+str(line)].font = Font(bold=True)
+                    sheet[chr(col)+str(line)].alignment = Alignment(horizontal='center', vertical='center')
+                    sheet[chr(col)+str(line+1)] = Contrast[i]
+                    col += 1
+        col += 1
         sheet[chr(col)+str(line)] = 'Camera noise'
+        sheet[chr(col)+str(line)].font = Font(bold=True)
+        sheet[chr(col)+str(line)].alignment = Alignment(horizontal='center', vertical='center')
         sheet[chr(col)+str(line+1)] = camera_noise
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         file_name = f"Measure_{now}.xlsx"
